@@ -1,6 +1,25 @@
 # Text-to-Chart
 
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Convert text, CSV, Excel, and images into beautiful charts instantly. Supports automatic chart type selection via AI or rule-based logic.
+
+## Demo
+
+1. Paste your data or upload a file (CSV, Excel, or image)
+2. Choose a chart type or let AI decide
+3. Generate charts with export options: embed link, PNG download, and reproducible Python code with syntax highlighting
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Architecture](#architecture)
+- [Running Tests](#running-tests)
+- [License](#license)
 
 ## Features
 
@@ -9,7 +28,7 @@ Convert text, CSV, Excel, and images into beautiful charts instantly. Supports a
 - **Multiple Chart Types**: Line, Bar, Scatter, Pie -- extensible via registry pattern
 - **Three Export Formats**: Embeddable HTML link, PNG image, reproducible Python code
 - **REST API**: Full-featured API with authentication, rate limiting, and OpenAPI docs
-- **Web UI**: Streamlit-powered web interface for interactive chart creation
+- **Web UI**: Streamlit-powered web interface with chart previews, PNG thumbnails, and Python code preview with syntax highlighting
 - **CLI**: Command-line tool for quick chart generation
 - **Extensible Architecture**: Registry patterns for parsers, chart types, plotters, and add-ons
 
@@ -60,6 +79,12 @@ streamlit run streamlit_app/app.py --server.port 5001
 ```
 
 Web UI available at: `http://localhost:5001`
+
+The Streamlit UI provides:
+- Paste or upload data (CSV, Excel, images)
+- Chart type selection or AI auto-detection
+- Chart preview and parsed data table
+- Export options: embed URL (with chart preview), PNG download (with image preview), Python code (with syntax highlighting)
 
 ## API Reference
 
