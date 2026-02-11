@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "text-to-chart"
+version = "0.1.0"
+description = "Convert text, CSV, Excel, and images into beautiful charts instantly"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "pandas>=2.0.0",
+    "plotly>=5.18.0",
+    "kaleido>=0.2.1",
+    "openpyxl>=3.1.0",
+    "openai>=1.0.0",
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+    "streamlit>=1.28.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "python-multipart>=0.0.6",
+    "slowapi>=0.1.9",
+    "pydantic>=2.0.0",
+    "click>=8.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+]
+
+[project.scripts]
+text-to-chart = "cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
