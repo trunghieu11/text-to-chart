@@ -5,12 +5,13 @@ Chart API routes: /v1/charts
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 
-from api.middleware.auth import verify_api_key
+from api.middleware.auth import TenantContext, verify_api_key
 from api.middleware.rate_limit import DEFAULT_RATE_LIMIT, limiter
 from api.models import ChartCreateResponse, ChartMetadataResponse, CodeResponse
 from api.storage import chart_store
@@ -32,7 +33,7 @@ async def create_chart_endpoint(
     file: Optional[UploadFile] = File(None, description="File upload (CSV, Excel, or Image)"),
     chart_type: str = Form("auto", description="Chart type: auto, line, bar, scatter, pie"),
     title: Optional[str] = Form(None, description="Optional chart title"),
-    api_key: str = Depends(verify_api_key),
+    ctx: TenantContext = Depends(verify_api_key),
 ):
     """
     Create a chart from text data or file upload.
@@ -47,6 +48,18 @@ async def create_chart_endpoint(
             status_code=400,
             detail="Provide either 'data' (text) or 'file' (upload).",
         )
+
+    # Quota check for SaaS tenants
+    if ctx.has_quota():
+        from api.usage import usage_tracker
+
+        period = datetime.now(timezone.utc).strftime("%Y-%m")
+        count = usage_tracker.get_count_for_tenant(ctx.tenant_id, period)
+        if count >= ctx.monthly_quota:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Quota exceeded for this period. Limit: {ctx.monthly_quota} charts/month.",
+            )
 
     try:
         if file:
@@ -70,7 +83,11 @@ async def create_chart_endpoint(
         # Track usage
         try:
             from api.usage import usage_tracker
-            usage_tracker.record(api_key, "/v1/charts")
+
+            if ctx.tenant_id is not None:
+                usage_tracker.record_for_tenant(ctx.tenant_id, "/v1/charts")
+            else:
+                usage_tracker.record(ctx.api_key, "/v1/charts")
         except Exception:
             pass  # Don't fail on usage tracking errors
 
@@ -100,7 +117,7 @@ async def create_chart_endpoint(
 async def get_chart(
     request: Request,
     chart_id: str,
-    api_key: str = Depends(verify_api_key),
+    ctx: TenantContext = Depends(verify_api_key),
 ):
     """Get chart metadata by ID."""
     data = chart_store.get(chart_id)
@@ -124,7 +141,7 @@ async def get_chart(
 async def get_chart_image(
     request: Request,
     chart_id: str,
-    api_key: str = Depends(verify_api_key),
+    ctx: TenantContext = Depends(verify_api_key),
 ):
     """Get chart as PNG image."""
     fig = chart_store.get_figure(chart_id)
@@ -161,7 +178,7 @@ async def get_chart_embed(
 async def get_chart_code(
     request: Request,
     chart_id: str,
-    api_key: str = Depends(verify_api_key),
+    ctx: TenantContext = Depends(verify_api_key),
 ):
     """Get reproducible Python code for the chart."""
     df = chart_store.get_dataframe(chart_id)

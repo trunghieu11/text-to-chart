@@ -44,6 +44,11 @@ class AppConfig:
     # Storage
     chart_ttl_hours: int = 24
     usage_db_path: str = "usage.db"
+    saas_db_path: str = "saas.db"
+
+    # Admin (for Admin UI)
+    admin_username: str = ""
+    admin_password: str = ""
 
     # Chart defaults
     default_template: str = "plotly_white"
@@ -66,6 +71,9 @@ class AppConfig:
             ui_port=int(os.environ.get("UI_PORT", "5000")),
             chart_ttl_hours=int(os.environ.get("CHART_TTL_HOURS", "24")),
             usage_db_path=os.environ.get("USAGE_DB_PATH", "usage.db"),
+            saas_db_path=os.environ.get("SAAS_DB_PATH", "saas.db"),
+            admin_username=os.environ.get("ADMIN_USERNAME", ""),
+            admin_password=os.environ.get("ADMIN_PASSWORD", ""),
             default_template=os.environ.get("CHART_TEMPLATE", "plotly_white"),
         )
 

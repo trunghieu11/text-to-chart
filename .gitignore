@@ -26,5 +26,6 @@ dist/
 
 # Project-specific
 usage.db
+saas.db
 *.png
 !docs/**/*.png

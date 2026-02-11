@@ -19,15 +19,22 @@ if project_root not in sys.path:
 import config  # noqa: F401
 
 from fastapi import Depends, FastAPI, Request
+
+# Ensure SaaS DB is initialized on startup
+try:
+    from api.db import ensure_db
+    ensure_db()
+except Exception:
+    pass  # Non-fatal; will retry on first use
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from api.middleware.auth import verify_api_key
+from api.middleware.auth import TenantContext, verify_api_key
 from api.middleware.rate_limit import limiter
 from api.models import HealthResponse
-from api.routers import charts
+from api.routers import account, admin, charts
 
 # Configure logging
 logging.basicConfig(
@@ -63,6 +70,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(charts.router)
+app.include_router(account.router)
+app.include_router(admin.router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
@@ -73,13 +82,20 @@ async def health_check():
 
 @app.get("/v1/usage", tags=["system"])
 async def get_usage(
-    api_key: str = Depends(verify_api_key),
+    ctx: TenantContext = Depends(verify_api_key),
 ):
-    """Get usage statistics for the current API key."""
-    from api.usage import usage_tracker
+    """Get usage statistics for the current API key or tenant."""
     from api.models import UsageResponse
+    from api.usage import usage_tracker
 
-    usage = usage_tracker.get_usage(api_key)
+    if ctx.tenant_id is not None:
+        usage = usage_tracker.get_usage_for_tenant(ctx.tenant_id)
+        return UsageResponse(
+            api_key=f"tenant:{ctx.tenant_id}",
+            period_start=usage["period_start"],
+            request_count=usage["request_count"],
+        )
+    usage = usage_tracker.get_usage(ctx.api_key)
     return UsageResponse(**usage)
 
 

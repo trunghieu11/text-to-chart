@@ -15,6 +15,7 @@ Convert text, CSV, Excel, and images into beautiful charts instantly. Supports a
 
 - [Features](#features)
 - [Quick Start](#quick-start)
+- [Documentation](#documentation)
 - [API Reference](#api-reference)
 - [Environment Variables](#environment-variables)
 - [Architecture](#architecture)
@@ -80,11 +81,36 @@ streamlit run streamlit_app/app.py --server.port 5001
 
 Web UI available at: `http://localhost:5001`
 
+### 6. Run the Developer Portal
+
+```bash
+streamlit run developer_portal/app.py --server.port 5002
+```
+
+Developer Portal available at: `http://localhost:5002`
+
+Register an account, manage API keys, and view usage. Set `API_BASE_URL` (default `http://localhost:8000`) if the API runs elsewhere.
+
+### 7. Run the Admin UI
+
+```bash
+streamlit run admin_ui/app.py --server.port 5003
+```
+
+Admin UI available at: `http://localhost:5003`
+
+Manage tenants, plans, keys, and usage. Requires `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`.
+
 The Streamlit UI provides:
 - Paste or upload data (CSV, Excel, images)
 - Chart type selection or AI auto-detection
 - Chart preview and parsed data table
 - Export options: embed URL (with chart preview), PNG download (with image preview), Python code (with syntax highlighting)
+
+## Documentation
+
+- For detailed usage instructions (CLI, API, Web UI, Developer Portal, Admin UI), see **[docs/USAGE.md](docs/USAGE.md)**.
+- For developers: technology stack, system design, and how to extend the project, see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
 
 ## API Reference
 
@@ -103,6 +129,10 @@ Include in requests:
 ```
 
 If `API_KEYS` is not set, the API runs in development mode (no auth required).
+
+### SaaS / Developer Portal
+
+Register at `POST /v1/account/register` (email, password, name) to get a JWT. Use the JWT as `Authorization: Bearer <token>` for account routes. Create API keys at `POST /v1/account/keys`; keys are shown once. Tenant keys from the DB use plan-based rate limits and monthly quotas.
 
 ### Endpoints
 
@@ -193,14 +223,19 @@ export RATE_LIMIT="100/minute"
 | `OPENAI_API_KEY` | OpenAI API key for AI features | (empty) |
 | `LLM_MODEL` | LLM model for chart type inference | `gpt-4o-mini` |
 | `VISION_MODEL` | Vision model for image parsing | `gpt-4o` |
-| `API_KEYS` | Comma-separated valid API keys | (empty = no auth) |
-| `RATE_LIMIT` | Rate limit per API key | `60/minute` |
+| `API_KEYS` | Comma-separated valid API keys (env fallback) | (empty = no auth) |
+| `RATE_LIMIT` | Rate limit per API key (env fallback) | `60/minute` |
 | `API_HOST` | API server host | `0.0.0.0` |
 | `API_PORT` | API server port | `8000` |
 | `UI_HOST` | Streamlit UI host | `0.0.0.0` |
 | `UI_PORT` | Streamlit UI port | `5001` |
 | `CHART_TTL_HOURS` | Chart expiry time in hours | `24` |
 | `USAGE_DB_PATH` | SQLite path for usage tracking | `usage.db` |
+| `SAAS_DB_PATH` | SQLite path for SaaS (tenants, plans, keys) | `saas.db` |
+| `JWT_SECRET` | Secret for JWT signing (account tokens) | `change-me-in-production` |
+| `ADMIN_USERNAME` | Admin UI login username | (empty) |
+| `ADMIN_PASSWORD` | Admin UI login password | (empty) |
+| `API_BASE_URL` | Base URL for API (Developer Portal, Admin UI) | `http://localhost:8000` |
 | `CHART_TEMPLATE` | Default Plotly template | `plotly_white` |
 
 ## Architecture
@@ -216,13 +251,19 @@ text_to_chart/
 │   └── exporters/          # Embed, image, code exporters
 ├── api/                    # FastAPI REST API
 │   ├── main.py             # App entry point
-│   ├── routers/            # API routes
-│   ├── middleware/          # Auth & rate limiting
+│   ├── db/                 # SaaS database (schema, init)
+│   ├── saas/               # Repository, JWT
+│   ├── routers/            # Charts, account, admin
+│   ├── middleware/         # Auth & rate limiting
 │   ├── models.py           # Pydantic models
 │   ├── storage.py          # Chart storage
 │   └── usage.py            # Usage tracking
 ├── streamlit_app/          # Streamlit Web UI
-│   ├── app.py              # App entry point
+│   └── app.py              # App entry point
+├── developer_portal/       # Developer Portal (keys, usage)
+│   └── app.py              # App entry point
+├── admin_ui/               # Admin UI (tenants, keys)
+│   └── app.py              # App entry point
 ├── cli.py                  # CLI interface
 ├── config.py               # Configuration management
 ├── tests/                  # Unit & integration tests
